@@ -28,8 +28,11 @@ export default class extends Controller {
       regexp: new RegExp(rule.pattern)
     }))
 
-    this.validatePassword()
-    this.validateConfirmation()
+    // A re-rendered form arrives with server-side is-invalid marks on fields
+    // the browser has emptied (password fields are never echoed back), so
+    // only re-check fields that still hold a value.
+    if (this.passwordTarget.value !== "") this.validatePassword()
+    if (this.passwordConfirmationTarget.value !== "") this.validateConfirmation()
   }
 
   validateEmail() {
