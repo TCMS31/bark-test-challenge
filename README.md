@@ -1,4 +1,4 @@
-# Bark signup challenge
+# Signup form with one shared password policy
 
 One screen, one form. You give it an email address and a password, it checks the
 password against a published policy in the browser *and* again in the model, and
@@ -6,9 +6,8 @@ it writes a `User` row holding a bcrypt digest. That is the entire application:
 no session, no login, no account management. It is a take-home exercise and it
 deliberately does one thing.
 
-The repo name will not help you: "Bark" appears nowhere in the code except the
-page title and the default database name, and there is no bark, dog or pet
-domain in here. It is a Rails 7.1 signup form on PostgreSQL.
+Rails 8.1 on Ruby 3.4.12 and PostgreSQL, with Hotwire (Turbo and Stimulus)
+served through importmap and Bootstrap compiled by Sprockets.
 
 ## The form
 
@@ -20,9 +19,26 @@ domain in here. It is a Rails 7.1 signup form on PostgreSQL.
 | --- | --- |
 | ![Confirmation card showing the new account's email address and registration time](docs/screenshots/03-account-created.png) | ![Error 404 card reading "Page not found" with a link back to signup](docs/screenshots/04-not-found.png) |
 
-Captured with Playwright at 1440x900 against the app running locally; the
-"email has already been taken" error in the second shot is against a seeded
-account (`bin/rails db:seed`).
+| Phone, live checklist | Phone, rejected submission |
+| --- | --- |
+| <img src="docs/screenshots/05-mobile-live-validation.png" width="260" alt="The signup form at phone width with every rule met"> | <img src="docs/screenshots/06-mobile-server-errors.png" width="260" alt="The signup form at phone width with the email and password fields outlined in red"> |
+
+Captured with Playwright (1440x900 and 390x844) against the Docker Compose stack
+below. The "email has already been taken" error is against one of the sample
+accounts that `db:prepare` seeds into a fresh database.
+
+## Accessibility
+
+- A rejected submission marks each failing field with Bootstrap's `is-invalid`
+  and `aria-invalid="true"` as well as listing the errors in a `role="alert"`
+  panel. Rails' default `field_with_errors` wrapper is turned off in
+  `config/application.rb` because Bootstrap does not style it.
+- Each item of the live password checklist carries visually hidden "(met)" /
+  "(not met yet)" text that the Stimulus controller keeps current, so the state
+  is not conveyed by colour alone. The email and confirmation hints are polite
+  live regions.
+- Every text colour in `app/assets/stylesheets/_palette.scss` (pine on warm
+  paper) clears 4.5:1, and focus gets a visible outline.
 
 ## One place where the password rules live
 
@@ -99,22 +115,30 @@ not use that index.
 
 ## Running it
 
-Needs Ruby 3.2.8 and a PostgreSQL server.
-
-```bash
-bin/setup          # bundle install, copy .env.example, prepare the database
-bin/rails db:seed  # optional: four sample accounts
-bin/rails server   # http://localhost:3000
-```
-
-With Docker instead — the image is authored but has not been built in this
-environment, so treat this as untested:
+With Docker, nothing else needed:
 
 ```bash
 cp .env.example .env
-echo "SECRET_KEY_BASE=$(bin/rails secret)" >> .env
+echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
 docker compose up --build   # http://localhost:8570
 ```
+
+This builds the production image (Ruby 3.4.12 slim, assets precompiled, runs
+as an unprivileged user), starts PostgreSQL 16 and runs `db:prepare`, which on
+a fresh database also loads the four sample accounts from `db/seeds.rb`. The
+container reports healthy once `/up` answers. `docker compose down -v` removes
+the stack and its database volume.
+
+Without Docker you need Ruby 3.4.12 (see `.ruby-version`) and a PostgreSQL
+server:
+
+```bash
+bin/setup          # bundle install, copy .env.example, create and seed the database
+bin/rails server   # http://localhost:3000
+```
+
+`bin/rails db:seed` is idempotent and re-adds the four sample accounts to an
+existing database.
 
 ## Environment variables
 
@@ -143,18 +167,18 @@ it.
 
 ```
 $ bundle exec rspec
-54 examples, 0 failures
+60 examples, 0 failures
 
 $ bundle exec rubocop
-34 files inspected, no offenses detected
+35 files inspected, no offenses detected
 ```
 
 A PostgreSQL server has to be reachable — point the suite at one with
 `DATABASE_HOST` / `DATABASE_PORT` or `DATABASE_URL`. bcrypt runs at its minimum
-cost factor in the test environment, so the full run takes about a second and a
-half.
+cost factor in the test environment, so the full run takes a couple of seconds.
+Examples run in random order; rerun a failing order with `--seed`.
 
-The four spec files are layered on purpose:
+The spec files are layered on purpose:
 
 - `spec/models/password_policy_spec.rb` — the rules themselves, plus the
   JavaScript-portability guard described above.
@@ -162,9 +186,13 @@ The four spec files are layered on purpose:
   unique index is a real backstop rather than a comment.
 - `spec/requests/users_spec.rb` — real templates rendered. This is the layer
   that pins the status codes: 422 on a rejected form so Turbo replaces the page,
-  400 when the `user` params key is missing, 422 on a lost uniqueness race, and
-  404 for an unknown id.
+  400 when the `user` params key is missing or is not a hash, 422 on a lost
+  uniqueness race, and 404 for an unknown id.
 - `spec/controllers/users_controller_spec.rb` — assignment and template choice.
+- `spec/system/signup_spec.rb` — the form as rendered, filled in and submitted
+  through Capybara's `rack_test` driver: the happy path, rejected fields and
+  their `aria-invalid` marks, a duplicate address in a different case, and the
+  rule list.
 
 Controller specs do not render views, which is exactly how a re-rendered form
 that raises can hide behind a green suite; that is why the request specs exist.
@@ -186,7 +214,7 @@ controller's business and a shared concern should not need to know which views
 exist where.
 
 **Nothing is fetched from a third party.** No CDN script, style, font or image;
-Bootstrap is compiled from the gem and the background is a CSS gradient, so the
+Bootstrap is compiled from the gem and headings use a local serif stack, so the
 page renders identically offline. That lets the content security policy be
 `self` throughout, with a per-request nonce for importmap's inline
 `<script type="importmap">` and Turbo's injected progress bar.
@@ -210,8 +238,13 @@ or a `created_at` index today would be decoration.
 - `config/credentials.yml.enc` is committed without its key, so it cannot be
   decrypted from a clone. Production reads `SECRET_KEY_BASE` from the
   environment instead.
-- No end-to-end browser test. `capybara` and `selenium-webdriver` are in the
-  Gemfile but there is no `spec/system`; the flows in the screenshots were driven
-  through Chromium out of band. A `:js` system spec is the obvious next addition.
-- `.github/workflows/ci.yml` (postgres service, rubocop, then rspec) has not run
-  here, and the Docker image has not been built here either.
+- The system spec runs without JavaScript, so the live checklist itself is only
+  exercised by hand and by the screenshot run. A JavaScript-driven system spec
+  would need a headless browser in the test environment.
+- Styles go through `sassc-rails`, whose libsass engine is no longer developed.
+  Bootstrap 5.3 still compiles cleanly with it; moving to Dart Sass is the next
+  step if Bootstrap stops supporting libsass.
+
+## License
+
+MIT, see [LICENSE](LICENSE).

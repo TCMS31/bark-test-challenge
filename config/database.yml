@@ -1,5 +1,5 @@
 # PostgreSQL. Every setting can be overridden from the environment so the same
-# image runs locally, in CI and in production; DATABASE_URL, if set, wins over
+# image runs locally, under Docker Compose and in production; DATABASE_URL, if set, wins over
 # everything below (Rails merges it on top of this file).
 default: &default
   adapter: postgresql

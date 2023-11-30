@@ -1,6 +1,6 @@
 # Action Cable is loaded because Turbo depends on it, but nothing in this app
 # broadcasts. The async adapter keeps that true without requiring a Redis
-# server to be running locally or in CI.
+# server to be running locally or in the test suite.
 development:
   adapter: async
 
