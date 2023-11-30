@@ -66,7 +66,7 @@ RSpec.describe PasswordPolicy do
     end
 
     it 'publishes one entry per rule, with a pattern and a human message' do
-      expect(payload['rules'].map { |rule| rule['key'] })
+      expect(payload['rules'].pluck('key'))
         .to eq(described_class::RULES.map { |rule| rule.key.to_s })
       expect(payload['rules']).to all(include('pattern', 'message', 'label'))
     end
@@ -80,12 +80,14 @@ RSpec.describe PasswordPolicy do
     # The browser compiles these with `new RegExp(pattern)`, so anything Ruby
     # understands but JavaScript does not would silently break client-side
     # feedback while the server kept working.
-    unsupported_by_javascript = /
-      \(\?<[=!] |  # lookbehind
-      \[\[:      |  # POSIX bracket class
-      \\[AzZhHRXG] |  # Ruby-only anchors and escapes
-      \(\?\#
-    /x
+    let(:unsupported_by_javascript) do
+      /
+        \(\?<[=!] |  # lookbehind
+        \[\[:      |  # POSIX bracket class
+        \\[AzZhHRXG] |  # Ruby-only anchors and escapes
+        \(\?\#
+      /x
+    end
 
     it 'uses only regexp syntax that JavaScript can compile' do
       described_class::RULES.each do |rule|

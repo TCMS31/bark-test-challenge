@@ -3,7 +3,7 @@
 # ---- build -----------------------------------------------------------------
 # Compiles native gem extensions and precompiles assets. None of the build
 # toolchain survives into the runtime image.
-ARG RUBY_VERSION=3.2.8
+ARG RUBY_VERSION=3.4.12
 FROM ruby:${RUBY_VERSION}-slim AS build
 
 ENV BUNDLE_DEPLOYMENT=1 \

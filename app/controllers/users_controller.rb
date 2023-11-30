@@ -21,23 +21,23 @@ class UsersController < ApplicationController
     if @user.save
       redirect_to user_path(@user), notice: t('.success')
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   rescue ActiveRecord::RecordNotUnique
     # Two concurrent signups can both pass the uniqueness validation; the
     # unique index is what actually settles it. Turn the 500 into a form error.
     @user.errors.add(:email, :taken)
-    render :new, status: :unprocessable_entity
+    render :new, status: :unprocessable_content
   end
 
   private
 
   def set_user
-    @user = User.find(params[:id])
+    @user = User.find(params.expect(:id))
   end
 
   def user_params
-    params.require(:user).permit(:email, :password, :password_confirmation)
+    params.expect(user: %i[email password password_confirmation])
   end
 
   def missing_user_params(exception)

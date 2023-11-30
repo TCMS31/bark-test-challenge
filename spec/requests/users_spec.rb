@@ -23,7 +23,7 @@ RSpec.describe 'Users', type: :request do
 
       policy = JSON.parse(CGI.unescapeHTML(response.body[/data-user-policy-value="([^"]+)"/, 1]))
       expect(policy['minLength']).to eq(PasswordPolicy::MIN_LENGTH)
-      expect(policy['rules'].map { |rule| rule['key'] })
+      expect(policy['rules'].pluck('key'))
         .to eq(PasswordPolicy::RULES.map { |rule| rule.key.to_s })
     end
   end
@@ -41,7 +41,7 @@ RSpec.describe 'Users', type: :request do
     it 're-renders the form with 422 so Turbo replaces the page' do
       post users_path, params: { user: valid_attributes.merge(password: 'weak') }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('must include at least one uppercase letter')
     end
 
@@ -53,12 +53,19 @@ RSpec.describe 'Users', type: :request do
       expect(response.body).to include('Create an account')
     end
 
+    it 'answers 400 rather than 500 when user is a scalar instead of a hash' do
+      post users_path, params: { user: 'ada@example.com' }
+
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to include('Create an account')
+    end
+
     it 'turns a lost uniqueness race into a form error rather than a 500' do
       allow_any_instance_of(User).to receive(:save).and_raise(ActiveRecord::RecordNotUnique)
 
       post users_path, params: { user: valid_attributes }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('has already been taken')
     end
   end

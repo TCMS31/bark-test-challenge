@@ -23,7 +23,7 @@ services:
     build:
       context: .
       args:
-        RUBY_VERSION: "3.2.8"
+        RUBY_VERSION: "3.4.12"
     depends_on:
       db:
         condition: service_healthy
