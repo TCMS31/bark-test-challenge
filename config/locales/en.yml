@@ -30,6 +30,7 @@ en:
       special: must include at least one special character
   users:
     create:
+      missing_params: 'Required parameters are missing: %{param}'
       success: Your account was created.
     new:
       confirm_password: Confirm password
@@ -37,7 +38,9 @@ en:
       heading: Create an account
       password: Password
       requirements: Your password needs
-      subheading: One email address, one strong password. That is the whole form.
+      rule_met: (met)
+      rule_unmet: (not met yet)
+      subheading: An email address and a password that meets every rule below.
       submit: Create account
     show:
       account_created: Account created

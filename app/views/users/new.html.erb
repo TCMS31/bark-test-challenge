@@ -11,27 +11,32 @@
 
     <%= form_with model: @user,
                   url: users_path,
+                  novalidate: true,
                   data: {
                     controller: 'user',
-                    user_policy_value: PasswordPolicy.as_json.to_json
+                    user_policy_value: PasswordPolicy.as_json.to_json,
+                    user_met_label_value: t('users.new.rule_met'),
+                    user_unmet_label_value: t('users.new.rule_unmet')
                   } do |form| %>
       <div class="mb-3">
         <%= form.label :email, t('users.new.email'), class: 'form-label' %>
         <%= form.email_field :email,
-                             class: 'form-control form-control-lg',
+                             class: ['form-control form-control-lg', { 'is-invalid' => @user.errors.include?(:email) }],
+                             required: true,
                              autocomplete: 'email',
                              placeholder: 'ada@example.com',
-                             aria: { describedby: 'email-feedback' },
+                             aria: { describedby: 'email-feedback', invalid: @user.errors.include?(:email) },
                              data: { user_target: 'email', action: 'input->user#validateEmail' } %>
-        <div id="email-feedback" class="form-text" data-user-target="emailFeedback"></div>
+        <div id="email-feedback" class="form-text" aria-live="polite" data-user-target="emailFeedback"></div>
       </div>
 
       <div class="mb-3">
         <%= form.label :password, t('users.new.password'), class: 'form-label' %>
         <%= form.password_field :password,
-                                class: 'form-control form-control-lg',
+                                class: ['form-control form-control-lg', { 'is-invalid' => @user.errors.include?(:password) }],
+                                required: true,
                                 autocomplete: 'new-password',
-                                aria: { describedby: 'password-rules' },
+                                aria: { describedby: 'password-rules', invalid: @user.errors.include?(:password) },
                                 data: { user_target: 'password', action: 'input->user#validatePassword' } %>
       </div>
 
@@ -41,11 +46,13 @@
           <li class="password-rule" data-user-target="rule" data-rule="length">
             <span class="password-rule__marker" aria-hidden="true"></span>
             <%= t('password_policy.labels.length', count: PasswordPolicy::MIN_LENGTH) %>
+            <span class="visually-hidden" data-rule-state><%= t('users.new.rule_unmet') %></span>
           </li>
           <% PasswordPolicy::RULES.each do |rule| %>
             <li class="password-rule" data-user-target="rule" data-rule="<%= rule.key %>">
               <span class="password-rule__marker" aria-hidden="true"></span>
               <%= rule.label %>
+              <span class="visually-hidden" data-rule-state><%= t('users.new.rule_unmet') %></span>
             </li>
           <% end %>
         </ul>
@@ -54,14 +61,18 @@
       <div class="mb-4">
         <%= form.label :password_confirmation, t('users.new.confirm_password'), class: 'form-label' %>
         <%= form.password_field :password_confirmation,
-                                class: 'form-control form-control-lg',
+                                class: ['form-control form-control-lg',
+                                        { 'is-invalid' => @user.errors.include?(:password_confirmation) }],
+                                required: true,
                                 autocomplete: 'new-password',
-                                aria: { describedby: 'confirmation-feedback' },
+                                aria: { describedby: 'confirmation-feedback',
+                                        invalid: @user.errors.include?(:password_confirmation) },
                                 data: {
                                   user_target: 'passwordConfirmation',
                                   action: 'input->user#validateConfirmation'
                                 } %>
-        <div id="confirmation-feedback" class="form-text" data-user-target="confirmationFeedback"></div>
+        <div id="confirmation-feedback" class="form-text" aria-live="polite"
+             data-user-target="confirmationFeedback"></div>
       </div>
 
       <%= form.submit t('users.new.submit'), class: 'btn btn-primary btn-lg w-100' %>

@@ -32,6 +32,10 @@ module BarkTestChallenge
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks])
 
+    # Templates add Bootstrap's is-invalid class themselves; Rails' default
+    # <div class="field_with_errors"> wrapper would only break the layout.
+    config.action_view.field_error_proc = ->(html_tag, _instance) { html_tag }
+
     # Sole source of user-facing copy; see config/locales.
     config.i18n.default_locale = :en
 

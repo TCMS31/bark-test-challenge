@@ -16,7 +16,7 @@ export default class extends Controller {
     "rule"
   ]
 
-  static values = { policy: Object }
+  static values = { policy: Object, metLabel: String, unmetLabel: String }
 
   connect() {
     const policy = this.policyValue || {}
@@ -49,7 +49,10 @@ export default class extends Controller {
     const password = this.passwordTarget.value
 
     this.ruleTargets.forEach((element) => {
-      element.classList.toggle("is-met", this.ruleMet(element.dataset.rule, password))
+      const met = this.ruleMet(element.dataset.rule, password)
+      element.classList.toggle("is-met", met)
+      const state = element.querySelector("[data-rule-state]")
+      if (state) state.textContent = met ? this.metLabelValue : this.unmetLabelValue
     })
 
     if (password === "") {
@@ -94,10 +97,12 @@ export default class extends Controller {
   mark(field, valid) {
     field.classList.toggle("is-valid", valid)
     field.classList.toggle("is-invalid", !valid)
+    field.setAttribute("aria-invalid", String(!valid))
   }
 
   clear(field, feedback) {
     field.classList.remove("is-valid", "is-invalid")
+    field.removeAttribute("aria-invalid")
     if (feedback) {
       feedback.textContent = ""
       feedback.className = "form-text"

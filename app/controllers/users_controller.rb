@@ -43,7 +43,7 @@ class UsersController < ApplicationController
   def missing_user_params(exception)
     # +@user+ must exist or the form in +new+ cannot be built at all.
     @user = User.new
-    flash.now[:alert] = "Required parameters are missing: #{exception.param}"
+    flash.now[:alert] = t('users.create.missing_params', param: exception.param)
     render :new, status: :bad_request
   end
 end
