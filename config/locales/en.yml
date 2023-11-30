@@ -1,0 +1,47 @@
+en:
+  activerecord:
+    errors:
+      models:
+        user:
+          attributes:
+            email:
+              invalid_format: is not a valid email address
+  password_policy:
+    labels:
+      length:
+        one: "%{count} character or more"
+        other: "%{count} characters or more"
+      lowercase: One lowercase letter
+      uppercase: One uppercase letter
+      digit: One digit
+      special: One special character
+    feedback:
+      email_invalid: Enter a valid email address.
+      email_valid: That looks like a valid address.
+      confirmation_mismatch: The two passwords do not match.
+      confirmation_match: The passwords match.
+    rules:
+      length:
+        one: "must be at least %{count} character long"
+        other: "must be at least %{count} characters long"
+      lowercase: must include at least one lowercase letter
+      uppercase: must include at least one uppercase letter
+      digit: must include at least one digit
+      special: must include at least one special character
+  users:
+    create:
+      success: Your account was created.
+    new:
+      confirm_password: Confirm password
+      email: Email address
+      heading: Create an account
+      password: Password
+      requirements: Your password needs
+      subheading: One email address, one strong password. That is the whole form.
+      submit: Create account
+    show:
+      account_created: Account created
+      add_another: Create another account
+      email: Email address
+      heading: You are registered
+      registered_at: Registered

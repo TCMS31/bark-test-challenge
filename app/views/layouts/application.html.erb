@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title><%= content_for(:title) || 'Bark signup' %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= stylesheet_link_tag 'application', 'data-turbo-track': 'reload' %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body>
+    <% if flash.any? %>
+      <div class="flash-stack">
+        <% flash.each do |type, message| %>
+          <div class="alert <%= type.to_s == 'alert' ? 'alert-danger' : 'alert-success' %> mb-2"
+               role="<%= type.to_s == 'alert' ? 'alert' : 'status' %>">
+            <%= message %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%= yield %>
+  </body>
+</html>

@@ -1,0 +1,4 @@
+// Single entry point for the stylesheet. Bootstrap first so the custom rules
+// below can override it; no `require_tree`, so the import order is explicit.
+@import 'bootstrap';
+@import 'auth';

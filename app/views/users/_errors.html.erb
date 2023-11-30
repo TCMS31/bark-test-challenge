@@ -1,0 +1,12 @@
+<% if user.errors.any? %>
+  <div class="alert alert-danger" role="alert">
+    <p class="fw-semibold mb-2">
+      <%= pluralize(user.errors.count, 'problem') %> stopped this account from being created:
+    </p>
+    <ul class="mb-0 ps-3">
+      <% user.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>

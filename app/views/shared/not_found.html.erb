@@ -1,0 +1,12 @@
+<% content_for :title, 'Page not found' %>
+
+<div class="auth-shell">
+  <div class="auth-card auth-card--result text-center">
+    <p class="auth-card__eyebrow">Error 404</p>
+    <h1 class="display-5 fw-semibold mb-2">Page not found</h1>
+    <p class="text-body-secondary mb-4">
+      The page you are looking for does not exist. It may have been moved or deleted.
+    </p>
+    <%= link_to 'Back to signup', root_path, class: 'btn btn-outline-primary w-100' %>
+  </div>
+</div>
