@@ -1,17 +1,17 @@
 // Styling for the signup flow. Everything here is self-contained: no external
-// image or font host, so the page renders identically offline.
-
-$auth-ink: #14213d;
-$auth-accent: #3d5afe;
-$auth-muted: #6b7280;
+// image or font host, so the page renders identically offline. Colours come
+// from _palette.scss.
 
 body {
-  background:
-    radial-gradient(1200px 600px at 12% -10%, rgba(61, 90, 254, 0.18), transparent 60%),
-    radial-gradient(900px 500px at 92% 110%, rgba(16, 185, 129, 0.16), transparent 60%),
-    #f6f7fb;
-  color: $auth-ink;
+  background-color: $paper;
+  border-top: 0.375rem solid $pine;
+  color: $ink;
   min-height: 100vh;
+}
+
+:focus-visible {
+  outline: 3px solid rgba($pine, 0.55);
+  outline-offset: 2px;
 }
 
 .flash-stack {
@@ -25,7 +25,7 @@ body {
 
   .alert {
     border: 0;
-    box-shadow: 0 12px 30px rgba(20, 33, 61, 0.16);
+    box-shadow: 0 12px 30px rgba($ink, 0.16);
     margin-bottom: 0.5rem;
   }
 }
@@ -40,9 +40,9 @@ body {
 
 .auth-card {
   background: #fff;
-  border: 1px solid rgba(20, 33, 61, 0.08);
-  border-radius: 1.25rem;
-  box-shadow: 0 24px 60px rgba(20, 33, 61, 0.12);
+  border: 1px solid rgba($ink, 0.08);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgba($ink, 0.06), 0 16px 40px rgba($ink, 0.08);
   max-width: 32rem;
   padding: 2.5rem;
   width: 100%;
@@ -52,7 +52,7 @@ body {
   }
 
   &__eyebrow {
-    color: $auth-accent;
+    color: $pine;
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.08em;
@@ -70,38 +70,38 @@ body {
 }
 
 .form-control {
-  border-color: rgba(20, 33, 61, 0.16);
+  border-color: rgba($ink, 0.16);
 
   &:focus {
-    border-color: $auth-accent;
-    box-shadow: 0 0 0 0.2rem rgba(61, 90, 254, 0.18);
+    border-color: $pine;
+    box-shadow: 0 0 0 0.2rem rgba($pine, 0.18);
   }
 }
 
 .btn-primary {
-  --bs-btn-bg: #{$auth-accent};
-  --bs-btn-border-color: #{$auth-accent};
-  --bs-btn-hover-bg: #2f49d8;
-  --bs-btn-hover-border-color: #2f49d8;
+  --bs-btn-bg: #{$pine};
+  --bs-btn-border-color: #{$pine};
+  --bs-btn-hover-bg: #{$pine-dark};
+  --bs-btn-hover-border-color: #{$pine-dark};
   font-weight: 600;
 }
 
 .btn-outline-primary {
-  --bs-btn-color: #{$auth-accent};
-  --bs-btn-border-color: #{$auth-accent};
-  --bs-btn-hover-bg: #{$auth-accent};
-  --bs-btn-hover-border-color: #{$auth-accent};
+  --bs-btn-color: #{$pine};
+  --bs-btn-border-color: #{$pine};
+  --bs-btn-hover-bg: #{$pine};
+  --bs-btn-hover-border-color: #{$pine};
   font-weight: 600;
 }
 
 .password-rules {
-  background: rgba(61, 90, 254, 0.05);
-  border: 1px solid rgba(61, 90, 254, 0.12);
+  background: rgba($pine, 0.05);
+  border: 1px solid rgba($pine, 0.12);
   border-radius: 0.75rem;
   padding: 0.9rem 1rem;
 
   &__title {
-    color: $auth-muted;
+    color: $muted;
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.06em;
@@ -121,13 +121,13 @@ body {
 
 .password-rule {
   align-items: center;
-  color: $auth-muted;
+  color: $muted;
   display: flex;
   font-size: 0.875rem;
   gap: 0.5rem;
 
   &__marker {
-    background: rgba(20, 33, 61, 0.18);
+    background: rgba($ink, 0.18);
     border-radius: 50%;
     flex: 0 0 auto;
     height: 0.55rem;
@@ -135,12 +135,12 @@ body {
   }
 
   &.is-met {
-    color: #0f7b4f;
+    color: $rule-met;
     font-weight: 600;
 
     .password-rule__marker {
-      background: #10b981;
-      box-shadow: 0 0 0 0.18rem rgba(16, 185, 129, 0.18);
+      background: $rule-met;
+      box-shadow: 0 0 0 0.18rem rgba($rule-met, 0.2);
     }
   }
 }
@@ -149,7 +149,7 @@ body {
   margin: 0 0 1.75rem;
 
   &__row {
-    border-top: 1px solid rgba(20, 33, 61, 0.08);
+    border-top: 1px solid rgba($ink, 0.08);
     padding: 0.85rem 0;
 
     &:first-child {
@@ -158,7 +158,7 @@ body {
   }
 
   dt {
-    color: $auth-muted;
+    color: $muted;
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.06em;

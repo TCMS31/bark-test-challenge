@@ -1,4 +1,7 @@
-// Single entry point for the stylesheet. Bootstrap first so the custom rules
-// below can override it; no `require_tree`, so the import order is explicit.
+// Single entry point for the stylesheet. The palette is set before Bootstrap
+// is imported so buttons, focus rings and links pick it up; the custom rules
+// come after so they can override Bootstrap. No `require_tree`, so the import
+// order is explicit.
+@import 'palette';
 @import 'bootstrap';
 @import 'auth';

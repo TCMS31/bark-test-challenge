@@ -1,0 +1,17 @@
+// Pine on warm paper: a calm, trustworthy palette for the one moment a
+// visitor hands over a password. Every text colour here clears WCAG AA
+// (4.5:1) against both white and $paper.
+$ink: #1d2b24;
+$pine: #1f6b52;
+$pine-dark: #17523f;
+$muted: #55605a;
+$paper: #f4efe6;
+$rule-met: #1c6b45;
+
+$primary: $pine;
+$body-color: $ink;
+$body-bg: $paper;
+$secondary-color: $muted;
+$link-color: $pine;
+$headings-font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+$headings-font-weight: 600;
