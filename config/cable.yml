@@ -1,0 +1,13 @@
+# Action Cable is loaded because Turbo depends on it, but nothing in this app
+# broadcasts. The async adapter keeps that true without requiring a Redis
+# server to be running locally or in CI.
+development:
+  adapter: async
+
+test:
+  adapter: test
+
+production:
+  adapter: redis
+  url: <%= ENV.fetch("REDIS_URL", "redis://localhost:6379/1") %>
+  channel_prefix: bark_test_challenge_production
