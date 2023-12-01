@@ -1,0 +1,49 @@
+require:
+  - rubocop-capybara
+  - rubocop-factory_bot
+  - rubocop-rails
+  - rubocop-rspec
+
+AllCops:
+  TargetRubyVersion: 3.2
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - 'bin/**/*'
+    - 'db/schema.rb'
+    - 'node_modules/**/*'
+    - 'vendor/**/*'
+    - 'tmp/**/*'
+
+# Prefer readable prose in comments and long validation declarations over an
+# arbitrary column count, but keep lines from running away.
+Layout/LineLength:
+  Max: 120
+
+Metrics/BlockLength:
+  Exclude:
+    - 'config/environments/*.rb'
+    - 'spec/**/*'
+
+Style/Documentation:
+  Enabled: true
+
+Rails/I18nLocaleTexts:
+  Enabled: true
+
+RSpec/ExampleLength:
+  Max: 10
+
+RSpec/MultipleExpectations:
+  Max: 3
+
+# Stubbing every instance is the only way to simulate losing the uniqueness
+# race without a second process.
+RSpec/AnyInstance:
+  Exclude:
+    - 'spec/requests/users_spec.rb'
+
+# Seeds are run from a terminal; printing what they did is the point.
+Rails/Output:
+  Exclude:
+    - 'db/seeds.rb'
