@@ -1,0 +1,24 @@
+# PostgreSQL. Every setting can be overridden from the environment so the same
+# image runs locally, in CI and in production; DATABASE_URL, if set, wins over
+# everything below (Rails merges it on top of this file).
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  host: <%= ENV.fetch("DATABASE_HOST", "localhost") %>
+  port: <%= ENV.fetch("DATABASE_PORT", 5432) %>
+  username: <%= ENV["DATABASE_USER"] %>
+  password: <%= ENV["DATABASE_PASSWORD"] %>
+
+development:
+  <<: *default
+  database: <%= ENV.fetch("DATABASE_NAME", "bark_test_challenge_development") %>
+
+# Warning: the test database is erased and re-created on every run.
+test:
+  <<: *default
+  database: <%= ENV.fetch("TEST_DATABASE_NAME", "bark_test_challenge_test") %>
+
+production:
+  <<: *default
+  database: <%= ENV.fetch("DATABASE_NAME", "bark_test_challenge_production") %>
