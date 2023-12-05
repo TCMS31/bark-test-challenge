@@ -1,0 +1,183 @@
+// Styling for the signup flow. Everything here is self-contained: no external
+// image or font host, so the page renders identically offline.
+
+$auth-ink: #14213d;
+$auth-accent: #3d5afe;
+$auth-muted: #6b7280;
+
+body {
+  background:
+    radial-gradient(1200px 600px at 12% -10%, rgba(61, 90, 254, 0.18), transparent 60%),
+    radial-gradient(900px 500px at 92% 110%, rgba(16, 185, 129, 0.16), transparent 60%),
+    #f6f7fb;
+  color: $auth-ink;
+  min-height: 100vh;
+}
+
+.flash-stack {
+  left: 50%;
+  max-width: calc(100vw - 2rem);
+  position: fixed;
+  top: 1.5rem;
+  transform: translateX(-50%);
+  width: 28rem;
+  z-index: 1080;
+
+  .alert {
+    border: 0;
+    box-shadow: 0 12px 30px rgba(20, 33, 61, 0.16);
+    margin-bottom: 0.5rem;
+  }
+}
+
+.auth-shell {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 3rem 1rem;
+}
+
+.auth-card {
+  background: #fff;
+  border: 1px solid rgba(20, 33, 61, 0.08);
+  border-radius: 1.25rem;
+  box-shadow: 0 24px 60px rgba(20, 33, 61, 0.12);
+  max-width: 32rem;
+  padding: 2.5rem;
+  width: 100%;
+
+  &__header {
+    margin-bottom: 1.75rem;
+  }
+
+  &__eyebrow {
+    color: $auth-accent;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+  }
+
+  &--result {
+    max-width: 30rem;
+  }
+}
+
+.form-label {
+  font-weight: 600;
+}
+
+.form-control {
+  border-color: rgba(20, 33, 61, 0.16);
+
+  &:focus {
+    border-color: $auth-accent;
+    box-shadow: 0 0 0 0.2rem rgba(61, 90, 254, 0.18);
+  }
+}
+
+.btn-primary {
+  --bs-btn-bg: #{$auth-accent};
+  --bs-btn-border-color: #{$auth-accent};
+  --bs-btn-hover-bg: #2f49d8;
+  --bs-btn-hover-border-color: #2f49d8;
+  font-weight: 600;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: #{$auth-accent};
+  --bs-btn-border-color: #{$auth-accent};
+  --bs-btn-hover-bg: #{$auth-accent};
+  --bs-btn-hover-border-color: #{$auth-accent};
+  font-weight: 600;
+}
+
+.password-rules {
+  background: rgba(61, 90, 254, 0.05);
+  border: 1px solid rgba(61, 90, 254, 0.12);
+  border-radius: 0.75rem;
+  padding: 0.9rem 1rem;
+
+  &__title {
+    color: $auth-muted;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.6rem;
+    text-transform: uppercase;
+  }
+
+  &__list {
+    display: grid;
+    gap: 0.35rem 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+.password-rule {
+  align-items: center;
+  color: $auth-muted;
+  display: flex;
+  font-size: 0.875rem;
+  gap: 0.5rem;
+
+  &__marker {
+    background: rgba(20, 33, 61, 0.18);
+    border-radius: 50%;
+    flex: 0 0 auto;
+    height: 0.55rem;
+    width: 0.55rem;
+  }
+
+  &.is-met {
+    color: #0f7b4f;
+    font-weight: 600;
+
+    .password-rule__marker {
+      background: #10b981;
+      box-shadow: 0 0 0 0.18rem rgba(16, 185, 129, 0.18);
+    }
+  }
+}
+
+.detail-list {
+  margin: 0 0 1.75rem;
+
+  &__row {
+    border-top: 1px solid rgba(20, 33, 61, 0.08);
+    padding: 0.85rem 0;
+
+    &:first-child {
+      border-top: 0;
+    }
+  }
+
+  dt {
+    color: $auth-muted;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  dd {
+    font-size: 1.05rem;
+    margin: 0.2rem 0 0;
+    word-break: break-word;
+  }
+}
+
+@media (max-width: 30rem) {
+  .auth-card {
+    padding: 1.75rem;
+  }
+
+  .password-rules__list {
+    grid-template-columns: 1fr;
+  }
+}

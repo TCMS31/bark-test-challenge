@@ -1,0 +1,21 @@
+<% content_for :title, 'Account created' %>
+
+<div class="auth-shell">
+  <div class="auth-card auth-card--result">
+    <p class="auth-card__eyebrow"><%= t('users.show.account_created') %></p>
+    <h1 class="h3 fw-semibold mb-4"><%= t('users.show.heading') %></h1>
+
+    <dl class="detail-list">
+      <div class="detail-list__row">
+        <dt><%= t('users.show.email') %></dt>
+        <dd><%= @user.email %></dd>
+      </div>
+      <div class="detail-list__row">
+        <dt><%= t('users.show.registered_at') %></dt>
+        <dd><%= l(@user.created_at, format: :long) %></dd>
+      </div>
+    </dl>
+
+    <%= link_to t('users.show.add_another'), new_user_path, class: 'btn btn-outline-primary w-100' %>
+  </div>
+</div>

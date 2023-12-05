@@ -1,0 +1,70 @@
+<% content_for :title, 'Create an account' %>
+
+<div class="auth-shell">
+  <div class="auth-card">
+    <header class="auth-card__header">
+      <h1 class="h3 fw-semibold mb-1"><%= t('users.new.heading') %></h1>
+      <p class="text-body-secondary mb-0"><%= t('users.new.subheading') %></p>
+    </header>
+
+    <%= render 'users/errors', user: @user %>
+
+    <%= form_with model: @user,
+                  url: users_path,
+                  data: {
+                    controller: 'user',
+                    user_policy_value: PasswordPolicy.as_json.to_json
+                  } do |form| %>
+      <div class="mb-3">
+        <%= form.label :email, t('users.new.email'), class: 'form-label' %>
+        <%= form.email_field :email,
+                             class: 'form-control form-control-lg',
+                             autocomplete: 'email',
+                             placeholder: 'ada@example.com',
+                             aria: { describedby: 'email-feedback' },
+                             data: { user_target: 'email', action: 'input->user#validateEmail' } %>
+        <div id="email-feedback" class="form-text" data-user-target="emailFeedback"></div>
+      </div>
+
+      <div class="mb-3">
+        <%= form.label :password, t('users.new.password'), class: 'form-label' %>
+        <%= form.password_field :password,
+                                class: 'form-control form-control-lg',
+                                autocomplete: 'new-password',
+                                aria: { describedby: 'password-rules' },
+                                data: { user_target: 'password', action: 'input->user#validatePassword' } %>
+      </div>
+
+      <div id="password-rules" class="password-rules mb-3">
+        <p class="password-rules__title"><%= t('users.new.requirements') %></p>
+        <ul class="password-rules__list">
+          <li class="password-rule" data-user-target="rule" data-rule="length">
+            <span class="password-rule__marker" aria-hidden="true"></span>
+            <%= t('password_policy.labels.length', count: PasswordPolicy::MIN_LENGTH) %>
+          </li>
+          <% PasswordPolicy::RULES.each do |rule| %>
+            <li class="password-rule" data-user-target="rule" data-rule="<%= rule.key %>">
+              <span class="password-rule__marker" aria-hidden="true"></span>
+              <%= rule.label %>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+
+      <div class="mb-4">
+        <%= form.label :password_confirmation, t('users.new.confirm_password'), class: 'form-label' %>
+        <%= form.password_field :password_confirmation,
+                                class: 'form-control form-control-lg',
+                                autocomplete: 'new-password',
+                                aria: { describedby: 'confirmation-feedback' },
+                                data: {
+                                  user_target: 'passwordConfirmation',
+                                  action: 'input->user#validateConfirmation'
+                                } %>
+        <div id="confirmation-feedback" class="form-text" data-user-target="confirmationFeedback"></div>
+      </div>
+
+      <%= form.submit t('users.new.submit'), class: 'btn btn-primary btn-lg w-100' %>
+    <% end %>
+  </div>
+</div>
