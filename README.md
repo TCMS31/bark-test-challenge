@@ -1,117 +1,114 @@
 # Bark signup challenge
 
-A single-screen Rails 7.1 application: someone enters an email address and a
-password, the password is checked against a published policy on both the client
-and the server, and a `User` row is created with a bcrypt digest. It is a
-take-home exercise, so it deliberately does one thing — there is no session, no
-login and no account management.
+One screen, one form. You give it an email address and a password, it checks the
+password against a published policy in the browser *and* again in the model, and
+it writes a `User` row holding a bcrypt digest. That is the entire application:
+no session, no login, no account management. It is a take-home exercise and it
+deliberately does one thing.
 
-The interesting part is that the password rules exist in exactly one place.
-`PasswordPolicy` holds them as data; the model validates against them and the
-same list is serialised into the form so the Stimulus controller checks the
-identical patterns as the user types.
+The repo name will not help you: "Bark" appears nowhere in the code except the
+page title and the default database name, and there is no bark, dog or pet
+domain in here. It is a Rails 7.1 signup form on PostgreSQL.
 
-## Screenshots
+## The form
 
-| Live validation as you type | Server-side errors on a rejected submission |
+| Live checklist as you type | A rejected submission comes back with its errors |
 | --- | --- |
-| ![Signup form with every password rule satisfied](docs/screenshots/01-signup-live-validation.png) | ![Signup form re-rendered with validation errors](docs/screenshots/02-signup-server-errors.png) |
+| ![Signup form with all five password rules ticked green and both fields marked valid](docs/screenshots/01-signup-live-validation.png) | ![Signup form re-rendered with a red panel listing two problems: email taken and a missing digit](docs/screenshots/02-signup-server-errors.png) |
 
-| Account created | Unknown record |
+| Confirmation after a successful signup | Unknown `/users/:id` |
 | --- | --- |
-| ![Confirmation page showing the new account](docs/screenshots/03-account-created.png) | ![404 page](docs/screenshots/04-not-found.png) |
+| ![Confirmation card showing the new account's email address and registration time](docs/screenshots/03-account-created.png) | ![Error 404 card reading "Page not found" with a link back to signup](docs/screenshots/04-not-found.png) |
 
-Captured with Playwright at 1440x900 against the app running locally with
-seeded data (`bin/rails db:seed`).
+Captured with Playwright at 1440x900 against the app running locally; the
+"email has already been taken" error in the second shot is against a seeded
+account (`bin/rails db:seed`).
 
-## Architecture
+## One place where the password rules live
 
-```mermaid
-flowchart TD
-    Browser["Browser"]
+The only structurally interesting thing here is that a signup form has *two*
+places that must agree about what a strong password is, and this one has a
+single definition feeding both.
 
-    subgraph Client["Client (importmap, no build step)"]
-        Stimulus["user_controller.js<br/>live field feedback"]
-        Turbo["Turbo Drive<br/>form submission"]
-    end
+[`app/models/password_policy.rb`](app/models/password_policy.rb) holds the rules
+as data — a list of `{key, pattern}` structs plus `MIN_LENGTH` (8) and
+`MAX_LENGTH` (72, because bcrypt silently truncates anything past 72 bytes and
+accepting a password whose tail is ignored is worse than rejecting it).
 
-    subgraph Rails["Rails application"]
-        Routes["config/routes.rb"]
-        Controller["UsersController<br/>params in, response out"]
-        Handler["ExceptionHandler<br/>RecordNotFound to 404"]
-        Views["app/views/users<br/>ERB templates"]
-    end
+From there the same list reaches both enforcement points:
 
-    subgraph Domain["Domain"]
-        User["User<br/>has_secure_password"]
-        Policy["PasswordPolicy<br/>rules as data"]
-        Validator["PasswordFormatValidator"]
-    end
+- **Server.** `PasswordFormatValidator` is an `ActiveModel::EachValidator`, so
+  `User` just declares `validates :password, password_format: true`. Length
+  stays on Rails' built-in `length` validator, which keeps the standard
+  `:too_short` / `:too_long` error types working for the shoulda matchers.
+- **Browser.** `PasswordPolicy.as_json` is rendered into the form as a Stimulus
+  value (`data-user-policy-value`), and `user_controller.js` does
+  `new RegExp(rule.pattern)` on the exact `Regexp#source` the server validated
+  with. The client is guidance, not a gate — every rule is checked again
+  server-side.
 
-    DB[("PostgreSQL<br/>users, unique index on email")]
+That second path only holds while the patterns stay portable, so
+`spec/models/password_policy_spec.rb` asserts that no rule uses lookbehind, a
+POSIX bracket class, a Ruby-only anchor or a regexp option, none of which
+survive the `.source` round trip into JavaScript.
 
-    Browser --> Stimulus
-    Browser --> Turbo
-    Turbo --> Routes
-    Routes --> Controller
-    Controller --> User
-    Controller --> Views
-    Controller -. raises .-> Handler
-    User --> Validator
-    Validator --> Policy
-    User --> DB
-    Views -- "serialised policy" --> Stimulus
-```
+Adding a rule is one entry in `RULES` and two lines in `config/locales/en.yml`.
+Whitespace deliberately does not count as a special character (`[^A-Za-z0-9\s]`),
+and a spec pins that.
 
-Dependencies point inward: the controller knows about the model, the model
-knows about the policy, and the policy knows about nothing. The browser gets
-its rules from the same object the server validates with, so the two cannot
-drift.
-
-## Signup flow
+## A signup, end to end
 
 ```mermaid
 sequenceDiagram
-    actor User
-    participant Stimulus as Stimulus controller
-    participant Controller as UsersController
-    participant Model as User
-    participant Policy as PasswordPolicy
+    actor Visitor
+    participant JS as user_controller.js
+    participant C as UsersController
+    participant U as User
+    participant P as PasswordPolicy
     participant DB as PostgreSQL
 
-    User->>Stimulus: types a password
-    Stimulus->>Stimulus: test each rule from the embedded policy
-    Stimulus-->>User: checklist turns green, no request sent
+    Visitor->>JS: types a password
+    JS->>JS: test each embedded rule
+    JS-->>Visitor: checklist turns green, no request sent
 
-    User->>Controller: POST /users
-    Controller->>Model: User.new(email, password, confirmation)
-    Model->>Model: normalize email to lower case
-    Model->>Policy: violations(password)
-    Policy-->>Model: unmet rules
+    Visitor->>C: POST /users
+    C->>U: User.new(email, password, confirmation)
+    U->>U: strip and downcase the email
+    U->>P: violations(password)
+    P-->>U: unmet rules
 
-    alt valid
-        Model->>DB: INSERT (bcrypt digest)
-        DB-->>Model: id
-        Controller-->>User: 302 to /users/:id
-    else invalid
-        Controller-->>User: 422 with the form and its errors
-    else email taken between check and insert
-        DB-->>Model: unique violation
-        Controller-->>User: 422 with "Email has already been taken"
+    alt everything valid
+        U->>DB: INSERT with bcrypt digest
+        DB-->>U: id
+        C-->>Visitor: 302 to /users/:id
+    else validation failed
+        C-->>Visitor: 422 with the form and its errors
+    else address claimed between the check and the insert
+        DB-->>U: unique index violation
+        C-->>Visitor: 422 with "Email has already been taken"
     end
 ```
 
-## Quickstart
+The last branch is the one worth noticing: `validates :uniqueness` issues a
+`SELECT` that two concurrent signups can both pass, so the unique index on
+`email` is what actually decides. `create` rescues `ActiveRecord::RecordNotUnique`
+and renders it as an ordinary form error rather than letting it surface as a 500.
+Email is normalised on assignment rather than compared with
+`case_sensitive: false`, which would emit `LOWER(email) = LOWER($1)` and could
+not use that index.
 
-Requires Ruby 3.2.8 and a PostgreSQL server.
+## Running it
+
+Needs Ruby 3.2.8 and a PostgreSQL server.
 
 ```bash
-bin/setup                 # bundle install, copy .env.example, create the database
-bin/rails db:seed         # optional sample accounts
-bin/rails server          # http://localhost:3000
+bin/setup          # bundle install, copy .env.example, prepare the database
+bin/rails db:seed  # optional: four sample accounts
+bin/rails server   # http://localhost:3000
 ```
 
-With Docker instead:
+With Docker instead — the image is authored but has not been built in this
+environment, so treat this as untested:
 
 ```bash
 cp .env.example .env
@@ -119,11 +116,13 @@ echo "SECRET_KEY_BASE=$(bin/rails secret)" >> .env
 docker compose up --build   # http://localhost:8570
 ```
 
-## Configuration
+## Environment variables
 
-Everything is read from the environment; `config/database.yml` has no literal
-credentials in it. `DATABASE_URL`, if set, overrides the individual database
-variables below.
+Everything is read from the environment and `config/database.yml` carries no
+literal credentials. `DATABASE_URL`, if set, overrides the individual database
+variables. Note that the Rails process itself does not load `.env` (there is no
+`dotenv` gem); `bin/setup` writes it for you, and `docker compose` is what reads
+it.
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
@@ -133,124 +132,86 @@ variables below.
 | `DATABASE_PASSWORD` | no | unset | Password for that role |
 | `DATABASE_NAME` | no | `bark_test_challenge_development` | Database in development and production |
 | `TEST_DATABASE_NAME` | no | `bark_test_challenge_test` | Database used by the suite |
-| `DATABASE_URL` | no | unset | Full connection URL; overrides the five above |
-| `RAILS_MAX_THREADS` | no | `5` | Puma threads and the Active Record pool size |
+| `DATABASE_URL` | no | unset | Full connection URL, overriding the five above |
+| `RAILS_MAX_THREADS` | no | `5` | Puma threads *and* the Active Record pool size, so the pool can never be smaller than the threads competing for it |
 | `RAILS_LOG_LEVEL` | no | `info` | Production log level |
-| `FORCE_SSL` | no | `true` | Set to `false` in production when TLS is terminated upstream or when running over plain HTTP |
-| `SECRET_KEY_BASE` | production | none | Cookie and signed-message key; generate with `bin/rails secret` |
-| `REDIS_URL` | no | `redis://localhost:6379/1` | Action Cable adapter in production only; unused in development and test |
+| `FORCE_SSL` | no | `true` | Set to `false` when TLS is terminated upstream or when running over plain HTTP |
+| `SECRET_KEY_BASE` | in production | none | Cookie and signed-message key, from `bin/rails secret` |
+| `REDIS_URL` | no | `redis://localhost:6379/1` | Action Cable adapter in production only |
 
-## Development
+## The suite
 
-```bash
-bundle exec rspec       # 54 examples, 0 failures
-bundle exec rubocop     # 34 files inspected, no offenses detected
-bin/rails db:seed       # four sample accounts
+```
+$ bundle exec rspec
+54 examples, 0 failures
+
+$ bundle exec rubocop
+34 files inspected, no offenses detected
 ```
 
-The suite needs a PostgreSQL server; point it at one with `DATABASE_HOST` /
-`DATABASE_PORT` or `DATABASE_URL`. bcrypt runs at its minimum cost factor in
-the test environment, so a full run takes about a second.
+A PostgreSQL server has to be reachable — point the suite at one with
+`DATABASE_HOST` / `DATABASE_PORT` or `DATABASE_URL`. bcrypt runs at its minimum
+cost factor in the test environment, so the full run takes about a second and a
+half.
 
-Tests are layered deliberately:
+The four spec files are layered on purpose:
 
-- `spec/models/password_policy_spec.rb` — the rules themselves, including a
-  guard that every pattern stays compilable by JavaScript.
+- `spec/models/password_policy_spec.rb` — the rules themselves, plus the
+  JavaScript-portability guard described above.
 - `spec/models/user_spec.rb` — validations, email normalisation, and that the
-  unique index really is the backstop.
-- `spec/requests/users_spec.rb` — full request/response with templates
-  rendered, which is where a broken re-render shows up.
+  unique index is a real backstop rather than a comment.
+- `spec/requests/users_spec.rb` — real templates rendered. This is the layer
+  that pins the status codes: 422 on a rejected form so Turbo replaces the page,
+  400 when the `user` params key is missing, 422 on a lost uniqueness race, and
+  404 for an unknown id.
 - `spec/controllers/users_controller_spec.rb` — assignment and template choice.
 
-## Project structure
+Controller specs do not render views, which is exactly how a re-rendered form
+that raises can hide behind a green suite; that is why the request specs exist.
 
-```
-app/
-  controllers/
-    concerns/exception_handler.rb  RecordNotFound -> 404, app-wide
-    users_controller.rb            new / create / show, nothing else
-  javascript/controllers/
-    user_controller.js             live feedback driven by the embedded policy
-  models/
-    password_policy.rb             the rules, as data
-    user.rb                        validations and email normalisation
-  validators/
-    password_format_validator.rb   applies the policy to an attribute
-  views/users/                     signup form, confirmation, error partial
-config/
-  locales/en.yml                   every user-facing string
-  initializers/content_security_policy.rb
-db/
-  migrate/                         users table + unique index on email
-docs/screenshots/                  the images above
-spec/
-  models/ requests/ controllers/   see Development
-```
+## Choices worth a reviewer's time
 
-## Design notes
+**Only the railties this app uses.** `config/application.rb` requires Active
+Record, Action Controller, Action View, Active Job and Action Cable by name
+instead of `rails/all`. Active Storage, Action Mailbox, Action Text and Action
+Mailer are not referenced anywhere, so they are not loaded — one less pile of
+configuration to keep correct. Action Cable stays because Turbo depends on it,
+and its development adapter is `async`, so no Redis server is needed to run the
+app locally.
 
-**One source of truth for the password rules.** The original implementation
-carried the rules twice: a Ruby regular expression in the model and a
-hand-written set of checks in JavaScript. They already disagreed — the server
-counted a space as a special character, the browser did not. `PasswordPolicy`
-now owns the list, `PasswordFormatValidator` applies it server-side, and
-`PasswordPolicy.as_json` is embedded in the form as a Stimulus value so the
-browser compiles the same patterns. Adding a rule is one entry plus one
-translation. A spec asserts the patterns avoid Ruby-only regexp syntax, because
-`Regexp#source` is what the browser receives.
+**Errors are handled where the template is.** `ExceptionHandler` carries only the
+genuinely app-wide case (`RecordNotFound` → a 404 page). `ParameterMissing`
+recovery lives in `UsersController`, because re-rendering `users/new` is that
+controller's business and a shared concern should not need to know which views
+exist where.
 
-**Email is normalised, not compared case-insensitively.** Folding the address
-on assignment means the plain unique index on `email` is the real constraint.
-The alternative (`uniqueness: { case_sensitive: false }`) issues
-`LOWER(email) = LOWER($1)`, which cannot use that index and still lets the
-database store two rows for the same address.
+**Nothing is fetched from a third party.** No CDN script, style, font or image;
+Bootstrap is compiled from the gem and the background is a CSS gradient, so the
+page renders identically offline. That lets the content security policy be
+`self` throughout, with a per-request nonce for importmap's inline
+`<script type="importmap">` and Turbo's injected progress bar.
 
-**Uniqueness is validated *and* enforced.** The validation produces a readable
-error; the index is what holds under concurrency. `create` rescues
-`ActiveRecord::RecordNotUnique` and turns the lost race into the same form
-error instead of a 500.
+**Scale, honestly.** One table, one insert, one primary-key lookup. There is no
+N+1 to fix and no page that grows with the data — the only per-request query
+beyond the insert is the uniqueness `SELECT`, which the unique index already
+serves. What would actually matter under load is the connection pool, which is
+why it is sized from the same `RAILS_MAX_THREADS` Puma uses. Adding pagination
+or a `created_at` index today would be decoration.
 
-**Failed submissions return 422.** Turbo discards a 200 response to a form
-submission, so the original code's `render :new` left the page unchanged with
-no explanation. The fix is one status code, and a request spec now pins it.
+## Out of scope
 
-**Scalability, honestly.** This is one table, one insert and one lookup by
-primary key; there is no N+1 query to fix and no page that grows with the data.
-The only per-request database work is the uniqueness `SELECT`, which the unique
-index already serves. What actually matters at load is the connection pool, so
-`config/database.yml` sizes it from `RAILS_MAX_THREADS` — the same variable
-Puma uses for its thread count — and the production image runs one Puma worker
-per core. If this grew a user list, that is where pagination and an index on
-`created_at` would belong; adding either now would be decoration.
-
-**Framework surface.** `rails/all` was replaced with an explicit list of
-railties, dropping Active Storage, Action Mailbox, Action Text and Action
-Mailer, none of which were referenced. Measured boot time did not change
-meaningfully (~0.6s either way on the development machine); the benefit is
-less configuration to keep correct, not speed. Action Cable stays because Turbo
-depends on it, and its development adapter is now `async` so no Redis server is
-needed to run the app.
-
-**Content Security Policy.** The app loads no third-party script, style, font
-or image, so the policy is `self` throughout, with a per-request nonce for
-importmap's inline `<script type="importmap">` and Turbo's injected progress
-bar. The signup form's background is CSS rather than the remote CDN image the
-original used, which also makes the page render identically offline.
-
-## Limitations
-
-- No authentication. `/users/:id` is a sequential id and anyone who knows one
-  can read that account's email address. A real product would show the
+- **No authentication.** `/users/:id` is a sequential id, so anyone who knows one
+  can read that account's email address. A real product would render the
   confirmation from a session rather than a guessable URL.
-- No password reset, email verification, rate limiting or lockout. Signup is
-  the whole feature set.
-- Passwords are checked for composition only. Composition rules are weak
-  protection compared with a breached-password check; a real system should call
-  something like Have I Been Pwned's range API instead.
-- `config/credentials.yml.enc` is committed without its key, which is correct
-  but means it cannot be decrypted from a clone. Production reads
-  `SECRET_KEY_BASE` from the environment instead.
-- Docker images are authored but unbuilt here; see `Dockerfile` and
-  `docker-compose.yml`.
-- No end-to-end browser test in the suite. The flows in the screenshots were
-  driven through Chromium manually rather than by a checked-in system spec.
+- No password reset, email verification, rate limiting or lockout.
+- Composition rules are weak protection on their own. A real system should also
+  check the password against a breach corpus, such as Have I Been Pwned's range
+  API.
+- `config/credentials.yml.enc` is committed without its key, so it cannot be
+  decrypted from a clone. Production reads `SECRET_KEY_BASE` from the
+  environment instead.
+- No end-to-end browser test. `capybara` and `selenium-webdriver` are in the
+  Gemfile but there is no `spec/system`; the flows in the screenshots were driven
+  through Chromium out of band. A `:js` system spec is the obvious next addition.
+- `.github/workflows/ci.yml` (postgres service, rubocop, then rspec) has not run
+  here, and the Docker image has not been built here either.
