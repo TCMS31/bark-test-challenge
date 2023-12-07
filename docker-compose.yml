@@ -1,0 +1,47 @@
+# Host ports are deliberately non-default so this stack can run alongside other
+# projects. The app is reachable at http://localhost:8570.
+name: bark-test-challenge
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-bark}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-bark}
+      POSTGRES_DB: ${DATABASE_NAME:-bark_test_challenge_production}
+    ports:
+      - "8579:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-bark}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      args:
+        RUBY_VERSION: "3.2.8"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${DATABASE_USER:-bark}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-bark}
+      DATABASE_NAME: ${DATABASE_NAME:-bark_test_challenge_production}
+      RAILS_MAX_THREADS: ${RAILS_MAX_THREADS:-5}
+      RAILS_LOG_LEVEL: ${RAILS_LOG_LEVEL:-info}
+      # Nothing terminates TLS in front of this stack.
+      FORCE_SSL: "false"
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?set SECRET_KEY_BASE, e.g. bin/rails secret}
+    command: >
+      sh -c "bundle exec rails db:prepare && bundle exec puma -C config/puma.rb"
+    ports:
+      - "8570:3000"
+
+volumes:
+  pgdata:
